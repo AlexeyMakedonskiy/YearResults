@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Telegram Stats - Анализ вашего аккаунта</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
             --tg-blue: #3390ec;
@@ -105,7 +104,7 @@
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            margin-top: 20px;
+            margin: 10px;
         }
 
         .login-btn:hover {
@@ -114,8 +113,13 @@
             box-shadow: 0 5px 15px rgba(51, 144, 236, 0.4);
         }
 
-        .telegram-login-container {
-            margin: 20px 0;
+        .login-btn.secondary {
+            background: var(--tg-bg-light);
+            color: var(--tg-text);
+        }
+
+        .login-btn.secondary:hover {
+            background: var(--tg-purple);
         }
 
         .stats-section {
@@ -335,6 +339,19 @@
             border-color: var(--tg-red);
         }
 
+        .instructions {
+            background: var(--tg-bg-light);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: var(--tg-blue);
+        }
+
         footer {
             text-align: center;
             padding: 30px 0;
@@ -378,22 +395,30 @@
 
         <div class="login-section" id="loginSection">
             <h2>Войдите в свой аккаунт Telegram</h2>
-            <p>Для просмотра статистики необходимо авторизоваться через Telegram. Мы не сохраняем ваши данные.</p>
+            <p>Для просмотра статистики необходимо авторизоваться. Мы не сохраняем ваши данные.</p>
             
-            <div class="telegram-login-container">
-                <script async 
-                    src="https://telegram.org/js/telegram-widget.js?22" 
-                    data-telegram-login="telegram_stats_bot" 
-                    data-size="large" 
-                    data-auth-url="https://yourdomain.com/auth" 
-                    data-request-access="write">
-                </script>
+            <div class="instructions">
+                <h3>Как создать бота для OAuth:</h3>
+                <p>1. Напишите <strong>@BotFather</strong> в Telegram</p>
+                <p>2. Отправьте команду <code>/newbot</code></p>
+                <p>3. Укажите имя и username бота</p>
+                <p>4. Получите токен бота</p>
+                <p>5. Используйте кнопку ниже для настройки</p>
             </div>
 
-            <p>Или используйте демо-режим для просмотра примера статистики</p>
-            <button class="login-btn" id="demoBtn">
-                <i class="fas fa-eye"></i> Демо-режим
-            </button>
+            <div>
+                <button class="login-btn" id="webAppBtn">
+                    <i class="fab fa-telegram"></i> Открыть в Telegram Web App
+                </button>
+                <button class="login-btn secondary" id="demoBtn">
+                    <i class="fas fa-eye"></i> Демо-режим
+                </button>
+            </div>
+
+            <div style="margin-top: 30px; padding: 20px; background: var(--tg-bg-light); border-radius: 12px;">
+                <h3>Быстрый старт с демо-режимом</h3>
+                <p>Нажмите "Демо-режим" чтобы посмотреть пример статистики без настройки бота</p>
+            </div>
         </div>
 
         <div class="loading" id="loadingSection">
@@ -566,31 +591,21 @@
         </div>
 
         <footer>
-            <p>Telegram Stats &copy; 2023 | Для работы приложения требуется создать бота через @BotFather</p>
-            <p>Это демонстрационный сайт, не связанный с официальным Telegram</p>
+            <p>Telegram Stats &copy; 2023 | Используйте демо-режим для тестирования</p>
+            <p>Для OAuth авторизации необходимо создать бота через @BotFather</p>
         </footer>
     </div>
 
     <script>
-        // Конфигурация
-        const BOT_USERNAME = 'telegram_stats_bot'; // Замените на username вашего бота
-        const AUTH_URL = 'https://yourdomain.com/auth'; // Замените на URL вашего сервера для аутентификации
-
         // DOM элементы
         const loginSection = document.getElementById('loginSection');
         const statsSection = document.getElementById('statsSection');
         const loadingSection = document.getElementById('loadingSection');
         const errorMessage = document.getElementById('errorMessage');
+        const webAppBtn = document.getElementById('webAppBtn');
         const demoBtn = document.getElementById('demoBtn');
         const logoutBtn = document.getElementById('logoutBtn');
         
-        // Инициализация Telegram Web App
-        const tg = window.Telegram?.WebApp;
-        if (tg) {
-            tg.expand();
-            tg.enableClosingConfirmation();
-        }
-
         // Функция для показа ошибки
         function showError(message) {
             document.getElementById('errorText').textContent = message;
@@ -602,74 +617,11 @@
             errorMessage.style.display = 'none';
         }
 
-        // Проверка параметров URL после OAuth редиректа
-        function checkOAuthResult() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const authData = urlParams.get('tgAuthResult');
-            
-            if (authData) {
-                try {
-                    const userData = JSON.parse(decodeURIComponent(authData));
-                    processTelegramAuth(userData);
-                } catch (e) {
-                    showError('Ошибка обработки данных авторизации');
-                }
-            }
-        }
-
-        // Обработка данных от Telegram OAuth
-        function processTelegramAuth(authData) {
-            hideError();
-            loginSection.style.display = 'none';
-            loadingSection.style.display = 'block';
-
-            // В реальном приложении здесь будет отправка данных на сервер для верификации
-            setTimeout(() => {
-                const userData = generateUserDataFromAuth(authData);
-                displayUserData(userData);
-                generateCharts(userData);
-                
-                loadingSection.style.display = 'none';
-                statsSection.style.display = 'block';
-                
-                // Очищаем URL от параметров авторизации
-                window.history.replaceState({}, document.title, window.location.pathname);
-            }, 2000);
-        }
-
-        // Генерация данных пользователя на основе OAuth
-        function generateUserDataFromAuth(authData) {
-            const registrationDate = new Date();
-            registrationDate.setFullYear(registrationDate.getFullYear() - Math.floor(Math.random() * 5) - 1);
-            registrationDate.setDate(registrationDate.getDate() - Math.floor(Math.random() * 365));
-            
-            const firstMessageDate = new Date(registrationDate);
-            firstMessageDate.setDate(firstMessageDate.getDate() + Math.floor(Math.random() * 30));
-            
-            const lastMessageDate = new Date();
-            lastMessageDate.setDate(lastMessageDate.getDate() - Math.floor(Math.random() * 7));
-
-            return {
-                id: authData.id,
-                firstName: authData.first_name,
-                lastName: authData.last_name || '',
-                username: authData.username,
-                photoUrl: authData.photo_url,
-                registrationDate,
-                publicChats: Math.floor(Math.random() * 50) + 5,
-                totalMessages: Math.floor(Math.random() * 10000) + 1000,
-                voiceMessages: Math.floor(Math.random() * 200) + 10,
-                videoMessages: Math.floor(Math.random() * 100) + 5,
-                activeTime: `${Math.floor(Math.random() * 4) + 19}:00-${Math.floor(Math.random() * 4) + 21}:00`,
-                lastMessage: formatDate(lastMessageDate),
-                fastestReply: Math.floor(Math.random() * 10) + 1,
-                commonWords: getRandomWords(),
-                firstMessage: formatDate(firstMessageDate),
-                pastUsernames: Math.floor(Math.random() * 5) + 1,
-                commonSticker: getRandomSticker(),
-                activityByHour: generateActivityData(),
-                messageTypes: generateMessageTypes()
-            };
+        // Открытие в Telegram Web App
+        function openInTelegramWebApp() {
+            const currentUrl = window.location.href;
+            const telegramWebAppUrl = `https://t.me/share/url?url=${encodeURIComponent(currentUrl)}&text=Telegram Stats - Посмотри статистику своего аккаунта`;
+            window.open(telegramWebAppUrl, '_blank');
         }
 
         // Демо-режим
@@ -872,23 +824,27 @@
         function logout() {
             statsSection.style.display = 'none';
             loginSection.style.display = 'block';
-            
-            // В реальном приложении здесь будет очистка токенов и сессий
         }
         
         // Обработчики событий
+        webAppBtn.addEventListener('click', openInTelegramWebApp);
         demoBtn.addEventListener('click', startDemoMode);
         logoutBtn.addEventListener('click', logout);
         
         // Инициализация при загрузке
         document.addEventListener('DOMContentLoaded', function() {
-            checkOAuthResult();
-            
-            // Обновляем скрипт Telegram Widget с актуальными параметрами
-            const telegramScript = document.querySelector('script[data-telegram-login]');
-            if (telegramScript) {
-                telegramScript.setAttribute('data-telegram-login', BOT_USERNAME);
-                telegramScript.setAttribute('data-auth-url', AUTH_URL);
+            // Проверяем, есть ли сохраненные данные пользователя
+            const savedUserData = localStorage.getItem('telegramUserData');
+            if (savedUserData) {
+                try {
+                    const userData = JSON.parse(savedUserData);
+                    displayUserData(userData);
+                    generateCharts(userData);
+                    loginSection.style.display = 'none';
+                    statsSection.style.display = 'block';
+                } catch (e) {
+                    localStorage.removeItem('telegramUserData');
+                }
             }
         });
     </script>
